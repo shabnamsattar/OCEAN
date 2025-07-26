@@ -44,7 +44,7 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
                     expr += depth * tm.y_var[v] / self.completeForest.n_estimators
 
         log2_delta = self.anomaly_threshold_log2
-        constant = np.log2(c) - log2_delta
+        constant = -c * log2_delta
         self.model.addConstr(expr >= constant, name="log2_anomaly_score_constraint")
 
     def buildModel(self):
