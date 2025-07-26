@@ -75,13 +75,26 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
         return True
 
     def getAnomalyScore(self):
-        """Return the Isolation Forest anomaly score of the counterfactual solution."""
-        return self.isolationForest.decision_function(np.array(self.x_sol))[0]
+        """Return the Isolation Forest anomaly score of the counterfactual solution (original s(x) ∈ (0,1])"""
+        x = np.array(self.x_sol)
+        path_lengths = []
+        for estimator in self.isolationForest.estimators_:
+            leaf_index = estimator.apply(x)[0]
+            node_depth = 0
+            while leaf_index != 0:
+                parent = np.where((estimator.tree_.children_left == leaf_index) |
+                                  (estimator.tree_.children_right == leaf_index))[0][0]
+                leaf_index = parent
+                node_depth += 1
+            path_lengths.append(node_depth)
+        avg_path_length = np.mean(path_lengths)
+        c = _average_path_length([self.isolationForest.max_samples_])[0]
+        return 2 ** (-avg_path_length / c)
 
     def __checkIfBadPrediction(self, x_sol):
         if self.verbose:
             score = self.getAnomalyScore()
-            print("Anomaly score (decision_function):", score)
+            print("Anomaly score (s(x)):", score)
             print("log2(score):", np.log2(score))
             print("Target log2 threshold:", self.anomaly_threshold_log2)
             if np.log2(score) > self.anomaly_threshold_log2:
