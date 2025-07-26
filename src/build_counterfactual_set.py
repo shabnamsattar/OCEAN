@@ -38,65 +38,71 @@ def check_counterfactuals_feasibility(clf, ilf, reader,
         print("Not all models could be solved")
 
 
-def build_counterfactual_file(datasetFile, desiredOutcome,
-                              nbCounterFactuals, checkFeasibility=False):
+def build_counterfactual_file(datasetFile, desiredOutcome, nbCounterFactuals,
+                              use_isolation_forest=False, anomaly_threshold=0.4):
     print("Start treating", datasetFile)
-    # Read data from file
     reader = DatasetReader(datasetFile)
-    data = pd.DataFrame(reader.X_test)
 
-    # Create and train a RandomForestClassifier
-    clf = RandomForestClassifier(max_leaf_nodes=50, random_state=1,
-                                 n_estimators=100)
+    clf = RandomForestClassifier(max_leaf_nodes=50, random_state=1, n_estimators=100)
     clf.fit(reader.X_train, reader.y_train)
-    print("Random forest with", clf.n_estimators,
-          "estimators with max depth", clf.max_depth,
-          "and max leaf nodes", clf.max_leaf_nodes)
-    nodes = [est.tree_.node_count for est in clf.estimators_]
-    print(sum(nodes)/len(nodes), "nodes on average")
+
+    ilf = IsolationForest(random_state=1, max_samples=100, n_estimators=100)
+    ilf.fit(reader.X_train)
+
+    data = pd.DataFrame(reader.X_test)
     predictions = clf.predict(data)
     data['clf_result'] = predictions
     data['Class'] = reader.y_test
 
-    # Sample initial samples for which to get counterfactuals
-    dataWithoutDesiredResults = data.loc[(data['Class'] != desiredOutcome) & (
-        data['clf_result'] != desiredOutcome)]
+    dataWithoutDesiredResults = data.loc[(data['Class'] != desiredOutcome) & (data['clf_result'] != desiredOutcome)]
     data.drop(['clf_result'], axis=1, inplace=True)
     if len(dataWithoutDesiredResults) > nbCounterFactuals:
-        dataWithoutDesiredResults = dataWithoutDesiredResults.sample(
-            n=nbCounterFactuals)
-    dataWithoutDesiredResults.drop(['clf_result'], axis=1, inplace=True)
+        dataWithoutDesiredResults = dataWithoutDesiredResults.sample(n=nbCounterFactuals)
 
-    # Check feasibility of finding optimal counterfactuals
-    if checkFeasibility:
-        # Create and fit an IsolationForest
-        ilf = IsolationForest(
-            random_state=1, max_samples=100, n_estimators=100)
-        ilf.fit(reader.X_train)
-        print("Isolation forest with", ilf.n_estimators,
-              "estimators with max samples", ilf.max_samples)
-        nodes = [est.tree_.node_count for est in ilf.estimators_]
-        print(sum(nodes)/len(nodes), "nodes on average")
-        check_counterfactuals_feasibility(
-            clf, ilf, reader, dataWithoutDesiredResults.index, desiredOutcome)
+    for index in dataWithoutDesiredResults.index:
+        x0 = [reader.data.loc[index, reader.data.columns != 'Class']]
+        if use_isolation_forest:
+            cf = IfClassifierCounterFactualMilp(
+                classifier=ilf,
+                sample=x0,
+                anomaly_threshold_log2=np.log2(anomaly_threshold),
+                featuresType=reader.featuresType,
+                featuresPossibleValues=reader.featuresPossibleValues,
+                featuresActionnability=reader.featuresActionnability,
+                oneHotEncoding=reader.oneHotEncoding,
+                objectiveNorm=1,
+                verbose=True
+            )
+        else:
+            cf = RfClassifierCounterFactualMilp(
+                classifier=clf,
+                sample=x0,
+                outputDesired=desiredOutcome,
+                isolationForest=ilf,
+                constraintsType=TreeConstraintsType.LinearCombinationOfPlanes,
+                objectiveNorm=1,
+                mutuallyExclusivePlanesCutsActivated=True,
+                strictCounterFactual=True,
+                verbose=True,
+                binaryDecisionVariables=BinaryDecisionVariables.PathFlow_y,
+                featuresActionnability=reader.featuresActionnability,
+                featuresType=reader.featuresType,
+                featuresPossibleValues=reader.featuresPossibleValues
+            )
 
-    # -- Output results to csv files --
-    # Read paths to files and create folder
-    outputFile, oneHotOutputFile = get_paths_to_counterfactuals_directory(
-        datasetFile)
-    # Write to file: Results in initial format
-    result = pd.read_csv(datasetFile)
-    result.drop(['Class'], axis=1, inplace=True)
-    result['DesiredOutcome'] = desiredOutcome
-    result = result.loc[dataWithoutDesiredResults.index, :]
-    result.to_csv(outputFile, index=False)
-    # Write to file: Results in oneHotEncodedFormat
-    data.drop(['Class'], axis=1, inplace=True)
-    data['DesiredOutcome'] = desiredOutcome
-    data = data.loc[dataWithoutDesiredResults.index, :]
-    data.to_csv(oneHotOutputFile, index=False)
+        cf.buildModel()
+        solved = cf.solveModel()
+        if solved:
+            print("Counterfactual for index", index, ":", cf.x_sol)
+            if use_isolation_forest:
+                print("Anomaly score:", cf.getAnomalyScore())
+        else:
+            print("Could not solve for index", index)
 
 
+if __name__ == '__main__':
+    build_counterfactual_file("datasets/test.csv", desiredOutcome=1, nbCounterFactuals=5,
+                              use_isolation_forest=True, anomaly_threshold=0.4)
 def get_paths_to_counterfactuals_directory(datasetFile):
     """
     Read paths to files and create folder:
