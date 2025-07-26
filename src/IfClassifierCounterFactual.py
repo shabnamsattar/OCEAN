@@ -58,24 +58,17 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
 
     # -- Check model status and solution --
     def __checkIfBadPrediction(self, x_sol):
-        badPrediction = (self.outputDesired != self.clf.predict(self.x_sol))
-        if badPrediction:
-            print("Error, the desired class is not the predicted one.")
-            if self.verbose:
-                # Print a detailed error statement
-                skLearnPrediction = self.clf.predict(self.x_sol)
-                skLearnScore = self.clf.predict_proba(x_sol)
-                if self.strictCounterFactual:
-                    print("The desired counterfactual", self.outputDesired,
-                          " is the class predicted by sklearn",
-                          skLearnPrediction)
-                else:
-                    badScore = (self.outputDesired not in np.argwhere(
-                        max(skLearnScore)))
-                    if not badScore:
-                        print("The desired counterfactual", self.outputDesired,
-                              "is one of the argmax of the prediction proba",
-                              skLearnScore)
+    """Check if the anomaly score of the counterfactual satisfies the log2 constraint."""
+        if self.verbose:
+            score = self.getAnomalyScore()
+            print("Anomaly score (decision_function):", score)
+            print("log2(score):", np.log2(score))
+            print("Target log2 threshold:", self.anomaly_threshold_log2)
+            if np.log2(score) > self.anomaly_threshold_log2:
+                print("Warning: counterfactual is too anomalous (violates constraint).")
+            else:
+                print("Counterfactual is plausible under the threshold.")
+
 
     def __checkClassificationScore(self, x_sol):
         if self.verbose:
