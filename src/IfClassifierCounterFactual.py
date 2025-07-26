@@ -5,7 +5,7 @@ import numpy as np
 # Import OCEAN functions and classes
 from src.ClassifierCounterFactual import ClassifierCounterFactualMilp
 from src.RandomForestCounterfactual import RandomForestCounterfactualMilp
-#from src.RandomAndIsolationForest import RandomAndIsolationForest
+from src.RandomAndIsolationForest import RandomAndIsolationForest
 from src.CounterFactualParameters import BinaryDecisionVariables
 from src.CounterFactualParameters import TreeConstraintsType
 
