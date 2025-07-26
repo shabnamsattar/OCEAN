@@ -39,7 +39,7 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
         self.smallerCosts = [random.uniform(0.5, 2)
                              for i in range(self.nFeatures)]
 
-        def __addAnomalyScoreConstraint(self):
+    def __addAnomalyScoreConstraint(self):
         expr = gp.LinExpr(0.0)
         c = _average_path_length([self.isolationForest.max_samples_])[0]
         for t in self.completeForest.isolationForestEstimatorsIndices:
