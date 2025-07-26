@@ -5,45 +5,30 @@ import numpy as np
 # Import OCEAN functions and classes
 from src.ClassifierCounterFactual import ClassifierCounterFactualMilp
 from src.RandomForestCounterfactual import RandomForestCounterfactualMilp
-from src.RandomAndIsolationForest import RandomAndIsolationForest
+#from src.RandomAndIsolationForest import RandomAndIsolationForest
 from src.CounterFactualParameters import BinaryDecisionVariables
 from src.CounterFactualParameters import TreeConstraintsType
 
+from sklearn.ensemble._iforest import _average_path_length
 
-class RfClassifierCounterFactualMilp(ClassifierCounterFactualMilp,
-                                     RandomForestCounterfactualMilp):
-    def __init__(
-            self, classifier, sample, outputDesired,
-            objectiveNorm=2, isolationForest=None, verbose=False,
-            mutuallyExclusivePlanesCutsActivated=False,
-            strictCounterFactual=False,
-            featuresType=False, featuresPossibleValues=False,
-            featuresActionnability=False, oneHotEncoding=False,
-            constraintsType=TreeConstraintsType.LinearCombinationOfPlanes,
-            binaryDecisionVariables=BinaryDecisionVariables.LeftRight_lambda,
-            randomCostsActivated=False):
+class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestCounterfactualMilp):
+    def __init__(self, classifier, sample, anomaly_threshold_log2,
+                 objectiveNorm=2, verbose=False,
+                 featuresType=False, featuresPossibleValues=False,
+                 featuresActionnability=False, oneHotEncoding=False,
+                 constraintsType=TreeConstraintsType.LinearCombinationOfPlanes,
+                 binaryDecisionVariables=BinaryDecisionVariables.LeftRight_lambda):
         # Instantiate the ClassifierMilp: implements actionability constraints
         # and feature consistency according to featuresType
-        ClassifierCounterFactualMilp.__init__(
-            self, classifier, sample, outputDesired,
+        ClassifierCounterFactualMilp.__init__(self, classifier, sample, 0,
             objectiveNorm, verbose, featuresType, featuresPossibleValues,
             featuresActionnability, oneHotEncoding)
         # Instantiate the RandomForestCounterfactualMilp object
-        RandomForestCounterfactualMilp.__init__(
-            self, mutuallyExclusivePlanesCutsActivated,
-            constraintsType, binaryDecisionVariables)
-        assert len(self.clf.feature_importances_) == self.nFeatures
-        self.model.modelName = "RandomForestCounterFactualMilp"
-        # Combine random forest and isolation forest into a completeForest
-        self.isolationForest = isolationForest
-        self.completeForest = RandomAndIsolationForest(self.clf,
-                                                       isolationForest)
-        # - Read and set formulation parameters -
-        self.strictCounterFactual = strictCounterFactual
-        self.randomCostsActivated = randomCostsActivated
-        if randomCostsActivated:
-            self.__generate_random_costs()
-
+        RandomForestCounterfactualMilp.__init__(self, False, constraintsType, binaryDecisionVariables)
+        self.model.modelName = "IsolationForestCounterFactualMilp"
+        self.completeForest = RandomAndIsolationForest(None, classifier)
+        self.anomaly_threshold_log2 = anomaly_threshold_log2
+        self.isolationForest = classifier
     # ---------------------- Private methods ------------------------
     # -- Initialize RandomForestCounterFactualMilp --
     def __generate_random_costs(self):
@@ -54,37 +39,22 @@ class RfClassifierCounterFactualMilp(ClassifierCounterFactualMilp,
         self.smallerCosts = [random.uniform(0.5, 2)
                              for i in range(self.nFeatures)]
 
-    def __addMajorityVoteConstraint(self):
-        """
-        Ensures that the random forest predicts the target class
-        for the counterfactual explanation.
-        At least 50% of the trees should vote for the target class.
-        """
-        # Measure the classification score:
-        #   the average of the tree class predictions
-        majorityVoteExpr = {cl: gp.LinExpr(
-            0.0) for cl in self.clf.classes_ if cl != self.outputDesired}
-        for t in self.completeForest.randomForestEstimatorsIndices:
+        def __addAnomalyScoreConstraint(self):
+        expr = gp.LinExpr(0.0)
+        c = _average_path_length([self.isolationForest.max_samples_])[0]
+        for t in self.completeForest.isolationForestEstimatorsIndices:
             tm = self.treeManagers[t]
+            tree = self.completeForest.estimators_[t]
             for v in range(tm.n_nodes):
                 if tm.is_leaves[v]:
-                    leaf_val = tm.tree.value[v][0]
-                    tot = sum(leaf_val)
-                    for output in range(len(leaf_val)):
-                        if output == self.outputDesired:
-                            for cl in majorityVoteExpr:
-                                majorityVoteExpr[cl] += tm.y_var[v] * (leaf_val[output])/(
-                                    tot * self.completeForest.n_estimators)
-                        else:
-                            majorityVoteExpr[output] -= tm.y_var[v] * (
-                                leaf_val[output])/(tot * self.completeForest.n_estimators)
-        # Add (strict) constraint on target score
-        self.majorityVoteConstr = dict()
-        for cl in majorityVoteExpr:
-            if self.strictCounterFactual:
-                majorityVoteExpr[cl] -= 1e-4
-            self.majorityVoteConstr[cl] = self.model.addConstr(
-                majorityVoteExpr[cl] >= 0, "majorityVoteConstr_cl" + str(cl))
+                    depth = tm.node_depth[v] + _average_path_length([tree.tree_.n_node_samples[v]])[0]
+                    expr += depth * tm.y_var[v] / self.completeForest.n_estimators
+        # log2(anomaly score) = log2(c / avg_path_len) <= log2(delta)
+        # <==> log2(avg_path_len) >= log2(c) - log2(delta)
+        delta_term = self.anomaly_threshold_log2
+        constant = np.log2(c) - delta_term
+        self.model.addConstr(expr >= constant, name="log2_anomaly_score_constraint")
+
 
     # -- Check model status and solution --
     def __checkIfBadPrediction(self, x_sol):
@@ -199,10 +169,12 @@ class RfClassifierCounterFactualMilp(ClassifierCounterFactualMilp,
     # ---------------------- Public methods ------------------------
     def buildModel(self):
         self.initSolution()
-        self.buildForest()
-        self.__addMajorityVoteConstraint()
+        self.__buildTrees()
+        self.__addAnomalyScoreConstraint()
         self.addActionnabilityConstraints()
         self.addOneHotEncodingConstraints()
+        self.initObjective()
+
 
     def solveModel(self):
         self.model.write("rf.lp")
