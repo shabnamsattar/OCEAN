@@ -58,7 +58,6 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
 
     # -- Check model status and solution --
     def __checkIfBadPrediction(self, x_sol):
-    """Check if the anomaly score of the counterfactual satisfies the log2 constraint."""
         if self.verbose:
             score = self.getAnomalyScore()
             print("Anomaly score (decision_function):", score)
