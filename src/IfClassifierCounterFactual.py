@@ -57,16 +57,7 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
 
 
     # -- Check model status and solution --
-    def __checkIfBadPrediction(self, x_sol):
-        if self.verbose:
-            score = self.getAnomalyScore()
-            print("Anomaly score (decision_function):", score)
-            print("log2(score):", np.log2(score))
-            print("Target log2 threshold:", self.anomaly_threshold_log2)
-            if np.log2(score) > self.anomaly_threshold_log2:
-                print("Warning: counterfactual is too anomalous (violates constraint).")
-            else:
-                print("Counterfactual is plausible under the threshold.")
+
 
 
     def __checkClassificationScore(self, x_sol):
@@ -196,3 +187,19 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
         if self.isolationForest:
             self.__checkResultPlausibility()
         return True
+
+    def getAnomalyScore(self):
+        """Return the Isolation Forest anomaly score of the counterfactual solution."""
+        return self.isolationForest.decision_function(np.array(self.x_sol))[0]
+
+    def __checkIfBadPrediction(self, x_sol):
+        if self.verbose:
+            score = self.getAnomalyScore()
+            print("Anomaly score (decision_function):", score)
+            print("log2(score):", np.log2(score))
+            print("Target log2 threshold:", self.anomaly_threshold_log2)
+            if np.log2(score) > self.anomaly_threshold_log2:
+                print("Warning: counterfactual is too anomalous (violates constraint).")
+            else:
+                print("Counterfactual is plausible under the threshold.")
+
