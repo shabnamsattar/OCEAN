@@ -169,7 +169,7 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
     # ---------------------- Public methods ------------------------
     def buildModel(self):
         self.initSolution()
-        self.__buildTrees()
+        self._RandomForestCounterfactualMilp__buildTrees()
         self.__addAnomalyScoreConstraint()
         self.addActionnabilityConstraints()
         self.addOneHotEncodingConstraints()
