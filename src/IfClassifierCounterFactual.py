@@ -108,9 +108,9 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
         if self.verbose:
             score = self.getAnomalyScore()
             print("Anomaly score (s(x)):", score)
-            #print("log2(score):", np.log2(score))
-            #print("Target log2 threshold:", self.anomaly_threshold_log2)
-            #if np.log2(score) < self.anomaly_threshold_log2:
-                #print("Counterfactual is plausible under the threshold.")
-            #else:
-                #print("Warning: counterfactual is too anomalous (violates constraint).")
+            print("log2(score):", np.log2(score))
+            print("Target log2 threshold:", self.anomaly_threshold_log2)
+            if np.log2(score) < self.anomaly_threshold_log2:
+                print("Counterfactual is plausible under the threshold.")
+            else:
+                print("Warning: counterfactual is too anomalous (violates constraint).")
