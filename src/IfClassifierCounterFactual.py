@@ -107,7 +107,7 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
         c = _average_path_length([self.isolationForest.max_samples_])[0]
 
         # Return Isolation Forest anomaly score
-        return (-2.0 ** (- avg_path_length /  c_max))
+        return (-2 ** (-avg_path_length / c))
 
 
     def __checkIfBadPrediction(self, x_sol):
