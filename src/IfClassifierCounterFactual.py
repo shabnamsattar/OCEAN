@@ -78,36 +78,30 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
         x = np.array(self.x_sol)
         path_lengths = []
 
-        for estimator in self.isolationForest.estimators_:
-            # Get the leaf node index where x falls
-            leaf_index = estimator.apply(x)[0]
+        for t in self.completeForest.isolationForestEstimatorsIndices:
+            tm = self.treeManagers[t]
+            tree = self.completeForest.estimators_[t]
 
-        # Compute actual depth by walking up from the leaf to the root
-            node_depth = 0
-            current_node = leaf_index
-            while current_node != 0:
-                parent = np.where(
-                    (estimator.tree_.children_left == current_node) |
-                    (estimator.tree_.children_right == current_node)
-                )[0][0]
-                current_node = parent
-                node_depth += 1
+            # Find the leaf node v that x falls into
+            leaf_index = tree.apply(x)[0]
 
-            # Get number of training samples in that leaf
-            n_node_samples = estimator.tree_.n_node_samples[leaf_index]
+            # Get node depth from the precomputed TreeManager
+            node_depth = tm.node_depth[leaf_index]
 
-        # Add expected extension (like in MILP)
+            # Add expected extension
+            n_node_samples = tree.tree_.n_node_samples[leaf_index]
             corrected_depth = node_depth + _average_path_length([n_node_samples])[0]
+
             path_lengths.append(corrected_depth)
 
         # Average over all trees
         avg_path_length = np.mean(path_lengths)
 
-        # Normalize with c(n)
+        # Use the same c(n) as MILP
         c = _average_path_length([self.isolationForest.max_samples_])[0]
 
-        # Return Isolation Forest anomaly score
-        return (-2 ** (-avg_path_length / c))
+        # Final anomaly score (same as used in constraint)
+        return 2 ** (-avg_path_length / c)
 
 
     def __checkIfBadPrediction(self, x_sol):
