@@ -75,21 +75,40 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
         return True
 
     def getAnomalyScore(self):
-        """Return the Isolation Forest anomaly score of the counterfactual solution (original s(x) ∈ (0,1])"""
         x = np.array(self.x_sol)
         path_lengths = []
+
         for estimator in self.isolationForest.estimators_:
+            # Get the leaf node index where x falls
             leaf_index = estimator.apply(x)[0]
+
+        # Compute actual depth by walking up from the leaf to the root
             node_depth = 0
-            while leaf_index != 0:
-                parent = np.where((estimator.tree_.children_left == leaf_index) |
-                                  (estimator.tree_.children_right == leaf_index))[0][0]
-                leaf_index = parent
+            current_node = leaf_index
+            while current_node != 0:
+                parent = np.where(
+                    (estimator.tree_.children_left == current_node) |
+                    (estimator.tree_.children_right == current_node)
+                )[0][0]
+                current_node = parent
                 node_depth += 1
-            path_lengths.append(node_depth)
+
+            # Get number of training samples in that leaf
+            n_node_samples = estimator.tree_.n_node_samples[leaf_index]
+
+        # Add expected extension (like in MILP)
+            corrected_depth = node_depth + _average_path_length([n_node_samples])[0]
+            path_lengths.append(corrected_depth)
+
+        # Average over all trees
         avg_path_length = np.mean(path_lengths)
+
+        # Normalize with c(n)
         c = _average_path_length([self.isolationForest.max_samples_])[0]
+
+        # Return Isolation Forest anomaly score
         return 2 ** (-avg_path_length / c)
+
 
     def __checkIfBadPrediction(self, x_sol):
         if self.verbose:
