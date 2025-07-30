@@ -31,8 +31,8 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
         self.anomaly_threshold_log2 = anomaly_threshold_log2
         self.isolationForest = classifier
 
-    def __addAnomalyScoreConstraint(self):
-        expr = gp.LinExpr(0.0)
+    def __addAnomalyScoreConstraint(self):  
+        expr = gp.LinExpr(0.0)  # initializes a Gurobi linear expression
         c = _average_path_length([self.isolationForest.max_samples_])[0]
 
         for t in self.completeForest.isolationForestEstimatorsIndices:
@@ -100,7 +100,7 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
         # Use the same c(n) as MILP
         c = _average_path_length([self.isolationForest.max_samples_])[0]
 
-        # Final anomaly score (same as used in constraint)
+        # Final anomaly score
         return 2 ** (-avg_path_length / c)
 
 
