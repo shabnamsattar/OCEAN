@@ -29,7 +29,6 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
 
         self.model.modelName = "IsolationForestCounterFactualMilp"
         self.completeForest = RandomAndIsolationForest(randomForest=None, isolationForest=classifier)
-        self.anomaly_threshold_log2 = anomaly_threshold_log2
         self.isolationForest = classifier
 
     def __addAnomalyScoreConstraint(self,*, threshold=0.2):
