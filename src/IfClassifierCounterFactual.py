@@ -66,9 +66,7 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
     def buildModel(self):
         self.initSolution()
         self._RandomForestCounterfactualMilp__buildTrees()
-        self.anomaly_threshold = 0.2    # or 0.1, 0.2, …
-        self.__addAnomalyScoreConstraint(threshold=self.anomaly_threshold)
-
+        self.__addAnomalyScoreConstraint(threshold=0.2)
         self.addActionnabilityConstraints()
         self.addOneHotEncodingConstraints()
         self.initObjective()
