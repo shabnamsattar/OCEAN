@@ -31,7 +31,7 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
         self.completeForest = RandomAndIsolationForest(randomForest=None, isolationForest=classifier)
         self.isolationForest = classifier
 
-    def __addAnomalyScoreConstraint(self):
+    def __addAnomalyScoreConstraint(self, threshold=0.0):
         expr = gp.LinExpr(0.0)
         for t in self.completeForest.isolationForestEstimatorsIndices:
             tm   = self.treeManagers[t]
@@ -41,27 +41,24 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
                 if tm.is_leaves[v]:
                     depth = (tm.node_depth[v] +
                          _average_path_length([tree.tree_.n_node_samples[v]])[0])
-                    expr += (depth / self.completeForest.n_estimators) * tm.y_var[v]
+                    expr += depth * tm.y_var[v] / self.completeForest.n_estimators
 
     # ----------------------------------------------------------------------
     # 2.  Convert “decision ≥ threshold” to a linear inequality on ⟨h(x)⟩
     #     decision(x) = −2−⟨h(x)⟩/c  − offset_
     # ----------------------------------------------------------------------
         c_n  = _average_path_length([self.isolationForest.max_samples_])[0]
-        
-        #delta = threshold + float(self.isolationForest.offset_)   # RHS inside brackets
-        #delta = threshold
-        #if delta >= 0:
-            #raise ValueError("threshold + offset_ must be negative for a valid cut-off")
+        delta = threshold + float(self.isolationForest.offset_)   # RHS inside brackets
+        if delta >= 0:
+            raise ValueError("threshold + offset_ must be negative for a valid cut-off")
 
-        log2_delta = -1.3
-        constant   = -1* c_n * log2_delta          # −c · log₂(−delta)
+        log2_delta = math.log2(-delta)          # log₂(−delta)
+        constant   = -c_n * log2_delta          # −c · log₂(−delta)
 
     # ----------------------------------------------------------------------
     # 3.  Finally add  ⟨h(x)⟩ ≥ constant
     # ----------------------------------------------------------------------
-        self.model.addConstr(expr >= constant,
-                         name="log2_anomaly_score_constraint")
+        self.model.addConstr(expr >= constant, name="log2_anomaly_score_constraint")
 
 
     def buildModel(self):
