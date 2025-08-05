@@ -31,7 +31,7 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
         self.completeForest = RandomAndIsolationForest(randomForest=None, isolationForest=classifier)
         self.isolationForest = classifier
 
-    def __addAnomalyScoreConstraint(self,*, threshold= -8):
+    def __addAnomalyScoreConstraint(self,*, threshold= -20):
         expr = gp.LinExpr(0.0)
         for t in self.completeForest.isolationForestEstimatorsIndices:
             tm   = self.treeManagers[t]
@@ -67,7 +67,7 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
     def buildModel(self):
         self.initSolution()
         self._RandomForestCounterfactualMilp__buildTrees()
-        self.__addAnomalyScoreConstraint()
+        self.__addAnomalyScoreConstraint(threshold = -20)
         self.addActionnabilityConstraints()
         self.addOneHotEncodingConstraints()
         self.initObjective()
