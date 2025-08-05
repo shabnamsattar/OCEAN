@@ -31,7 +31,7 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
         self.anomaly_threshold_log2 = anomaly_threshold_log2
         self.isolationForest = classifier
 
-    def __addAnomalyScoreConstraint(self):  def __addAnomalyScoreConstraint(self, threshold=0.0):
+    def __addAnomalyScoreConstraint(self, threshold=0.0):
         expr = gp.LinExpr(0.0)
         for t in self.completeForest.isolationForestEstimatorsIndices:
             tm   = self.treeManagers[t]
