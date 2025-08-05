@@ -59,7 +59,7 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
     # ----------------------------------------------------------------------
     # 3.  Finally add  ⟨h(x)⟩ ≥ constant
     # ----------------------------------------------------------------------
-        self.model.addConstr(expr >= constant,
+        self.model.addConstr(expr <= constant,
                          name="log2_anomaly_score_constraint")
 
 
