@@ -53,7 +53,7 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
             raise ValueError("threshold + offset_ must be negative for a valid cut-off")
 
         log2_delta = math.log2(-delta)          # log₂(−delta)
-        constant   = -c_n * log2_delta          # −c · log₂(−delta)
+        constant   = -1* c_n * log2_delta          # −c · log₂(−delta)
 
     # ----------------------------------------------------------------------
     # 3.  Finally add  ⟨h(x)⟩ ≥ constant
