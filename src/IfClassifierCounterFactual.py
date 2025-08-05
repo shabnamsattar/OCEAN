@@ -31,7 +31,7 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
         self.completeForest = RandomAndIsolationForest(randomForest=None, isolationForest=classifier)
         self.isolationForest = classifier
 
-    def __addAnomalyScoreConstraint(self, threshold= -20):
+    def __addAnomalyScoreConstraint(self):
         expr = gp.LinExpr(0.0)
         for t in self.completeForest.isolationForestEstimatorsIndices:
             tm   = self.treeManagers[t]
@@ -54,7 +54,7 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
         #if delta >= 0:
             #raise ValueError("threshold + offset_ must be negative for a valid cut-off")
 
-        log2_delta = -30
+        log2_delta = -20
         constant   = -1* c_n * log2_delta          # −c · log₂(−delta)
 
     # ----------------------------------------------------------------------
@@ -67,7 +67,7 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
     def buildModel(self):
         self.initSolution()
         self._RandomForestCounterfactualMilp__buildTrees()
-        self.__addAnomalyScoreConstraint(threshold = -20)
+        self.__addAnomalyScoreConstraint()
         self.addActionnabilityConstraints()
         self.addOneHotEncodingConstraints()
         self.initObjective()
