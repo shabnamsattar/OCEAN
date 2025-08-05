@@ -101,16 +101,16 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
         c = _average_path_length([self.isolationForest.max_samples_])[0]
 
         # Final anomaly score
-        return 2 ** (-avg_path_length / c)
+        return -(2 ** (-avg_path_length / c))- 0.598
 
 
     def __checkIfBadPrediction(self, x_sol):
         if self.verbose:
             score = self.getAnomalyScore()
             print("Anomaly score (s(x)):", score)
-            print("log2(score):", np.log2(score))
-            print("Target log2 threshold:", self.anomaly_threshold_log2)
-            if np.log2(score) < self.anomaly_threshold_log2:
+            #print("log2(score):", np.log2(score))
+            #print("Target log2 threshold:", self.anomaly_threshold_log2)
+            if score >= 0:
                 print("Counterfactual is plausible under the threshold.")
             else:
                 print("Warning: counterfactual is too anomalous (violates constraint).")
