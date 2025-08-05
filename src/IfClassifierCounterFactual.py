@@ -54,7 +54,7 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
         #if delta >= 0:
             #raise ValueError("threshold + offset_ must be negative for a valid cut-off")
 
-        log2_delta = -10
+        log2_delta = -5
         constant   = -1* c_n * log2_delta          # −c · log₂(−delta)
 
     # ----------------------------------------------------------------------
