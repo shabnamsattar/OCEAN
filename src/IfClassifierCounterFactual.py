@@ -48,7 +48,7 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
     # 2.  Convert “decision ≥ threshold” to a linear inequality on ⟨h(x)⟩
     #     decision(x) = −2−⟨h(x)⟩/c  − offset_
     # ----------------------------------------------------------------------
-         log2_delta = self.anomaly_threshold_log2
+        log2_delta = self.anomaly_threshold_log2
         constant = -c * log2_delta
         self.model.addConstr(expr >= constant, name="log2_anomaly_score_constraint")
 
