@@ -31,21 +31,36 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
         self.anomaly_threshold_log2 = anomaly_threshold_log2
         self.isolationForest = classifier
 
-    def __addAnomalyScoreConstraint(self):  
-        expr = gp.LinExpr(0.0)  # initializes a Gurobi linear expression
-        c = _average_path_length([self.isolationForest.max_samples_])[0]
-
+    def __addAnomalyScoreConstraint(self):  def __addAnomalyScoreConstraint(self, threshold=0.0):
+        expr = gp.LinExpr(0.0)
         for t in self.completeForest.isolationForestEstimatorsIndices:
-            tm = self.treeManagers[t]
+            tm   = self.treeManagers[t]
             tree = self.completeForest.estimators_[t]
+
             for v in range(tm.n_nodes):
                 if tm.is_leaves[v]:
-                    depth = tm.node_depth[v] + _average_path_length([tree.tree_.n_node_samples[v]])[0]
-                    expr += depth * tm.y_var[v] / self.completeForest.n_estimators
+                    depth = (tm.node_depth[v] +
+                         _average_path_length([tree.tree_.n_node_samples[v]])[0])
+                    expr += (depth / self.completeForest.n_estimators) * tm.y_var[v]
 
-        log2_delta = self.anomaly_threshold_log2
-        constant = -c * log2_delta
-        self.model.addConstr(expr >= constant, name="log2_anomaly_score_constraint")
+    # ----------------------------------------------------------------------
+    # 2.  Convert “decision ≥ threshold” to a linear inequality on ⟨h(x)⟩
+    #     decision(x) = −2−⟨h(x)⟩/c  − offset_
+    # ----------------------------------------------------------------------
+        c_n  = _average_path_length([self.isolationForest.max_samples_])[0]
+        delta = threshold + float(self.isolationForest.offset_)   # RHS inside brackets
+        if delta >= 0:
+            raise ValueError("threshold + offset_ must be negative for a valid cut-off")
+
+        log2_delta = math.log2(-delta)          # log₂(−delta)
+        constant   = -c_n * log2_delta          # −c · log₂(−delta)
+
+    # ----------------------------------------------------------------------
+    # 3.  Finally add  ⟨h(x)⟩ ≥ constant
+    # ----------------------------------------------------------------------
+        self.model.addConstr(expr >= constant,
+                         name="log2_anomaly_score_constraint")
+
 
     def buildModel(self):
         self.initSolution()
@@ -74,34 +89,34 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
         self.__checkIfBadPrediction(self.x_sol)
         return True
 
-    def getAnomalyScore(self):
-        x = np.array(self.x_sol)
-        path_lengths = []
+    
+    def getAnomalyScore(self, *, return_raw=False):
+        
+        x = np.asarray(self.x_sol).reshape(1, -1)
 
+    # --- average path length ⟨h(x)⟩ ----------------------------------------
+        depths = []
         for t in self.completeForest.isolationForestEstimatorsIndices:
-            tm = self.treeManagers[t]
-            tree = self.completeForest.estimators_[t]
+            tm    = self.treeManagers[t]
+            tree  = self.completeForest.estimators_[t]
 
-            # Find the leaf node v that x falls into
-            leaf_index = tree.apply(x)[0]
+            leaf  = tree.apply(x)[0]          # leaf that x lands in
+            depth = tm.node_depth[leaf]       # #edges from root to leaf
+            # Expected extra splits to isolate the nₗ points inside that leaf
+            depth += _average_path_length([tree.tree_.n_node_samples[leaf]])[0]
 
-            # Get node depth from the precomputed TreeManager
-            node_depth = tm.node_depth[leaf_index]
+            depths.append(depth)
 
-            # Add expected extension
-            n_node_samples = tree.tree_.n_node_samples[leaf_index]
-            corrected_depth = node_depth + _average_path_length([n_node_samples])[0]
+        h_bar = float(np.mean(depths))        # ⟨h(x)⟩
+        c_n   = _average_path_length([self.isolationForest.max_samples_])[0]
 
-            path_lengths.append(corrected_depth)
+        # --- scikit-learn scores ----------------------------------------------
+        score_samples = -2.0 ** (-h_bar / c_n)        # same as notebook
+        if return_raw:
+            return score_samples
 
-        # Average over all trees
-        avg_path_length = np.mean(path_lengths)
+        return score_samples - float(self.isolationForest.offset_)
 
-        # Use the same c(n) as MILP
-        c = _average_path_length([self.isolationForest.max_samples_])[0]
-
-        # Final anomaly score
-        return -(2 ** (-avg_path_length / c))- 0.5
 
 
     def __checkIfBadPrediction(self, x_sol):
