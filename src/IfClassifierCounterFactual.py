@@ -10,7 +10,7 @@ from src.RandomAndIsolationForest import RandomAndIsolationForest
 from src.CounterFactualParameters import TreeConstraintsType, BinaryDecisionVariables
 
 class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestCounterfactualMilp):
-    def __init__(self, classifier, sample,
+    def __init__(self, classifier, sample, anomaly_threshold_log2,
                  objectiveNorm=2, verbose=False,
                  featuresType=False, featuresPossibleValues=False,
                  featuresActionnability=False, oneHotEncoding=False,
@@ -28,10 +28,11 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
             binaryDecisionVariables=binaryDecisionVariables)
 
         self.model.modelName = "IsolationForestCounterFactualMilp"
+        self.anomaly_threshold_log2 = anomaly_threshold_log2             
         self.completeForest = RandomAndIsolationForest(randomForest=None, isolationForest=classifier)
         self.isolationForest = classifier
 
-    def __addAnomalyScoreConstraint(self, threshold=0.0):
+    def __addAnomalyScoreConstraint(self):
         expr = gp.LinExpr(0.0)
         for t in self.completeForest.isolationForestEstimatorsIndices:
             tm   = self.treeManagers[t]
@@ -47,17 +48,8 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
     # 2.  Convert “decision ≥ threshold” to a linear inequality on ⟨h(x)⟩
     #     decision(x) = −2−⟨h(x)⟩/c  − offset_
     # ----------------------------------------------------------------------
-        c_n  = _average_path_length([self.isolationForest.max_samples_])[0]
-        delta = threshold + float(self.isolationForest.offset_)   # RHS inside brackets
-        if delta >= 0:
-            raise ValueError("threshold + offset_ must be negative for a valid cut-off")
-
-        log2_delta = math.log2(-delta)          # log₂(−delta)
-        constant   = -c_n * log2_delta          # −c · log₂(−delta)
-
-    # ----------------------------------------------------------------------
-    # 3.  Finally add  ⟨h(x)⟩ ≥ constant
-    # ----------------------------------------------------------------------
+         log2_delta = self.anomaly_threshold_log2
+        constant = -c * log2_delta
         self.model.addConstr(expr >= constant, name="log2_anomaly_score_constraint")
 
 
