@@ -2,6 +2,7 @@ import gurobipy as gp
 from gurobipy import GRB
 import numpy as np
 from sklearn.ensemble._iforest import _average_path_length
+import math
 
 from src.ClassifierCounterFactual import ClassifierCounterFactualMilp
 from src.RandomForestCounterfactual import RandomForestCounterfactualMilp
