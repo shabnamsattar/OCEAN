@@ -48,7 +48,9 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
     #     decision(x) = −2−⟨h(x)⟩/c  − offset_
     # ----------------------------------------------------------------------
         c_n  = _average_path_length([self.isolationForest.max_samples_])[0]
-        delta = threshold + float(self.isolationForest.offset_)   # RHS inside brackets
+        
+        #delta = threshold + float(self.isolationForest.offset_)   # RHS inside brackets
+        delta = threshold
         if delta >= 0:
             raise ValueError("threshold + offset_ must be negative for a valid cut-off")
 
