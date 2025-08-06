@@ -44,10 +44,7 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
                          _average_path_length([tree.tree_.n_node_samples[v]])[0])
                     expr += depth * tm.y_var[v] / self.completeForest.n_estimators
 
-    # ----------------------------------------------------------------------
-    # 2.  Convert “decision ≥ threshold” to a linear inequality on ⟨h(x)⟩
-    #     decision(x) = −2−⟨h(x)⟩/c  − offset_
-    # ----------------------------------------------------------------------
+   
         c_n  = _average_path_length([self.isolationForest.max_samples_])[0]
         delta = threshold + float(self.isolationForest.offset_)
     if delta >= 0:
