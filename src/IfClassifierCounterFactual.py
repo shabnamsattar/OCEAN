@@ -50,8 +50,8 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
     # ----------------------------------------------------------------------
         c = _average_path_length([self.isolationForest.max_samples_])[0]
         log2_delta = self.anomaly_threshold_log2
-        constant = -c * log2_delta
-        self.model.addConstr(expr >= constant, name="log2_anomaly_score_constraint")
+        constant = -(2)**(expr/c)
+        self.model.addConstr(constant > -0.58, name="log2_anomaly_score_constraint")
 
 
     def buildModel(self):
