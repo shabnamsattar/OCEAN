@@ -47,11 +47,11 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
    
         c_n  = _average_path_length([self.isolationForest.max_samples_])[0]
         delta = threshold + float(self.isolationForest.offset_)
-    if delta >= 0:
-        raise ValueError("threshold + offset_ must be negative for a valid cut-off")
+        if delta >= 0:
+            raise ValueError("threshold + offset_ must be negative for a valid cut-off")
 
-    log2_delta = math.log2(-delta)          # log₂(−delta)
-    constant   = -c_n * log2_delta   
+        log2_delta = math.log2(-delta)          # log₂(−delta)
+        constant   = -c_n * log2_delta   
         self.model.addConstr(expr >= constant , name="log2_anomaly_score_constraint")
 
 
