@@ -70,7 +70,7 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
 
         if self.model.status != GRB.OPTIMAL:
             self.objValue = "inf"
-            self.x_sol = self.x0
+            #self.x_sol = self.x0
             return False
 
         self.objValue = self.model.ObjVal
@@ -79,8 +79,8 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
             self.x_sol[0].append(self.x_var_sol[f].getAttr(GRB.Attr.X))
         if self.verbose:
             print("Solution built\n", self.x_sol)
-            print("Hello")
-        self.__checkIfBadPrediction(self.x_sol)
+            
+        #self.__checkIfBadPrediction(self.x_sol)
         return True
 
     
