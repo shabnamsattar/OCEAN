@@ -79,6 +79,7 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
             self.x_sol[0].append(self.x_var_sol[f].getAttr(GRB.Attr.X))
         if self.verbose:
             print("Solution built\n", self.x_sol)
+            print("Hello")
         self.__checkIfBadPrediction(self.x_sol)
         return True
 
