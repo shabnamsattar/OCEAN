@@ -10,7 +10,7 @@ from src.RandomAndIsolationForest import RandomAndIsolationForest
 from src.CounterFactualParameters import TreeConstraintsType, BinaryDecisionVariables
 
 class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestCounterfactualMilp):
-    def __init__(self, classifier, sample, anomaly_threshold_log2,
+    def __init__(self, classifier, sample,
                  objectiveNorm=2, verbose=False,
                  featuresType=False, featuresPossibleValues=False,
                  featuresActionnability=False, oneHotEncoding=False,
