@@ -28,7 +28,6 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
             binaryDecisionVariables=binaryDecisionVariables)
 
         self.model.modelName = "IsolationForestCounterFactualMilp"
-        self.anomaly_threshold_log2 = anomaly_threshold_log2             
         self.completeForest = RandomAndIsolationForest(randomForest=None, isolationForest=classifier)
         self.isolationForest = classifier
 
