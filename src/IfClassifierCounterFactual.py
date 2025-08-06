@@ -32,7 +32,7 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
         self.completeForest = RandomAndIsolationForest(randomForest=None, isolationForest=classifier)
         self.isolationForest = classifier
 
-    def __addAnomalyScoreConstraint(self):
+    def __addAnomalyScoreConstraint(self, threshold=0.0):
         expr = gp.LinExpr(0.0)
         for t in self.completeForest.isolationForestEstimatorsIndices:
             tm   = self.treeManagers[t]
@@ -48,10 +48,14 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
     # 2.  Convert “decision ≥ threshold” to a linear inequality on ⟨h(x)⟩
     #     decision(x) = −2−⟨h(x)⟩/c  − offset_
     # ----------------------------------------------------------------------
-        c = _average_path_length([self.isolationForest.max_samples_])[0]
-        log2_delta = self.anomaly_threshold_log2
-        constant = -(expr/c)
-        self.model.addConstr(constant <= log2_delta , name="log2_anomaly_score_constraint")
+        c_n  = _average_path_length([self.isolationForest.max_samples_])[0]
+        delta = threshold + float(self.isolationForest.offset_)
+    if delta >= 0:
+        raise ValueError("threshold + offset_ must be negative for a valid cut-off")
+
+    log2_delta = math.log2(-delta)          # log₂(−delta)
+    constant   = -c_n * log2_delta   
+        self.model.addConstr(expr >= constant , name="log2_anomaly_score_constraint")
 
 
     def buildModel(self):
@@ -86,7 +90,7 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
         
         x = np.asarray(self.x_sol).reshape(1, -1)
 
-    # --- average path length ⟨h(x)⟩ ----------------------------------------
+        # average path length ⟨h(x)⟩
         depths = []
         for t in self.completeForest.isolationForestEstimatorsIndices:
             tm    = self.treeManagers[t]
@@ -94,7 +98,6 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
 
             leaf  = tree.apply(x)[0]          # leaf that x lands in
             depth = tm.node_depth[leaf]       # #edges from root to leaf
-            # Expected extra splits to isolate the nₗ points inside that leaf
             depth += _average_path_length([tree.tree_.n_node_samples[leaf]])[0]
 
             depths.append(depth)
@@ -102,8 +105,8 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
         h_bar = float(np.mean(depths))        # ⟨h(x)⟩
         c_n   = _average_path_length([self.isolationForest.max_samples_])[0]
 
-        # --- scikit-learn scores ----------------------------------------------
-        score_samples = -2.0 ** (-h_bar / c_n)        # same as notebook
+        
+        score_samples = -2.0 ** (-h_bar / c_n) 
         if return_raw:
             return score_samples
 
@@ -120,4 +123,4 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
             if score >= 0:
                 print("Counterfactual is plausible under the threshold.")
             else:
-                print("Warning: counterfactual is too anomalous (violates constraint).")
+                print("Warning: counterfactual is anomalous (violates constraint).")
