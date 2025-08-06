@@ -18,7 +18,7 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
                  binaryDecisionVariables=BinaryDecisionVariables.LeftRight_lambda):
 
         ClassifierCounterFactualMilp.__init__(
-            self, classifier, sample, 0,  # outputDesired dummy (not used)
+            self, classifier, sample, 0, 
             objectiveNorm, verbose, featuresType, featuresPossibleValues,
             featuresActionnability, oneHotEncoding)
 
