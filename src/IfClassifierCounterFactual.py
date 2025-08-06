@@ -52,6 +52,7 @@ class IfClassifierCounterFactualMilp(ClassifierCounterFactualMilp, RandomForestC
         log2_delta = math.log2(-delta)          # log₂(−delta)
         constant   = -c_n * log2_delta   
         self.model.addConstr(expr >= constant , name="log2_anomaly_score_constraint")
+        print (expr)
 
 
     def buildModel(self):
