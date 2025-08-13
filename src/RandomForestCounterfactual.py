@@ -13,11 +13,13 @@ from src.TreeMilpManager import TreeInMilpManager
 class RandomForestCounterfactualMilp():
     def __init__(self, mutuallyExclusivePlanesCutsActivated=False,
                  constraintsType=TreeConstraintsType.LinearCombinationOfPlanes,
-                 binaryDecisionVariables=BinDec.LeftRight_lambda):
+                 binaryDecisionVariables=BinDec.LeftRight_lambda,
+                 addPlausibilityConstraint=True):
         self.useExclusivePlanesCuts = mutuallyExclusivePlanesCutsActivated
         # Specify formulation parameters of forest MILP
         self.constraintsType = constraintsType
         self.binaryDecisionVariables = binaryDecisionVariables
+        self.addPlausibilityConstraint = addPlausibilityConstraint             
 
     # ---------------------- Private methods ------------------------
     # -- Initialize RandomForestCounterFactualMilp --
@@ -370,6 +372,6 @@ class RandomForestCounterfactualMilp():
                               == TreeConstraintsType.LinearCombinationOfPlanes)
         if useMutuallyExcPlanesCuts and not useLinCombOfPlanes:
             self.__addMutuallyExclusivePlanesCuts()
-        if self.isolationForest:
+        if self.addPlausibilityConstraint and self.isolationForest:
             self.__addIsolationForestPlausibilityConstraint()
         self.__initModelObjective()
