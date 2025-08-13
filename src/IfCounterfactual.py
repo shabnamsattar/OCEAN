@@ -29,6 +29,7 @@ class IfCounterfactualMilp(CounterfactualMilp, RandomForestCounterfactualMilp):
             self, sample, objectiveNorm, verbose,
             featuresType, featuresPossibleValues,
             featuresActionnability, oneHotEncoding)
+        self.outputDesired = 0 
 
         # Reuse the ensemble→MILP machinery, but WITHOUT plausibility add-on
         RandomForestCounterfactualMilp.__init__(
