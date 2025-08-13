@@ -43,6 +43,12 @@ class IfCounterfactualMilp(CounterfactualMilp, RandomForestCounterfactualMilp):
         self.model.modelName = "IsolationForestCounterfactualMilp"
         self.isolationForest = isolationForest
         self.completeForest = IsolationOnlyForest(isolationForest)
+        
+        self.randomCostsActivated = False
+        
+        self.greaterCosts = [1.0] * self.nFeatures
+        self.smallerCosts = [1.0] * self.nFeatures
+
 
         # Convenience partitions from CounterfactualMilp
         self.continuousFeatures = [f for f in range(self.nFeatures)
