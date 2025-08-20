@@ -62,17 +62,7 @@ class IfCounterfactualMilp(CounterfactualMilp, RandomForestCounterfactualMilp):
 
     # ---------- Key new constraint: log2 anomaly score ----------
     def __addAnomalyScoreConstraint(self, threshold=0.0):
-        """
-        Enforce decision_function(x') >= threshold.
-
-        Sklearn IF: decision_function(x) = score_samples(x) - offset_
-        and score_samples(x) = 2^(- E[h(x)] / c(n))
-        We require: 2^(-E[h]/c_n) - offset_ >= threshold
-                  => 2^(-E[h]/c_n) >= threshold + offset_ =: delta
-        We assume delta < 0 (typical when 'threshold' is 0 and offset_ > 0) so that -delta in (0, 1),
-        then:   -E[h]/c_n >= log2(delta)
-                E[h] >= - c_n * log2(-delta)      with delta = threshold + offset_  (delta < 0)
-        """
+        
         expr = gp.LinExpr(0.0)  # will hold the average depth E[h]
         for t in self.completeForest.isolationForestEstimatorsIndices:
             tm   = self.treeManagers[t]
