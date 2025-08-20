@@ -31,7 +31,7 @@ class IfCounterfactualMilp(CounterfactualMilp, RandomForestCounterfactualMilp):
             featuresActionnability, oneHotEncoding)
         self.outputDesired = 0 
 
-        # Reuse the ensemble→MILP machinery, but WITHOUT plausibility add-on
+        
         RandomForestCounterfactualMilp.__init__(
             self,
             mutuallyExclusivePlanesCutsActivated=False,
