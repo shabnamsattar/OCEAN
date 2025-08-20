@@ -11,7 +11,7 @@ from src.CounterFactualParameters import TreeConstraintsType, BinaryDecisionVari
 class IfCounterfactualMilp(CounterfactualMilp, RandomForestCounterfactualMilp):
     """
     Find the closest x' to x0 such that an Isolation Forest would treat x' as an inlier.
-    No majority-vote or class constraints — only the anomaly score constraint.
+    
     """
     def __init__(self,
                  isolationForest,              # REQUIRED: trained sklearn IF
