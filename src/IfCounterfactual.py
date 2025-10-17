@@ -80,6 +80,7 @@ class IfCounterfactualMilp(CounterfactualMilp, RandomForestCounterfactualMilp):
         log2_delta = math.log2(-delta)       # log2(−delta) < 0
         constant   = -c_n * log2_delta       # positive
         self.model.addConstr(expr >= constant, name="log2_anomaly_score_constraint")
+        print("Hi")
 
     # ---------- Build & Solve ----------
     def buildModel(self, decision_threshold=0.0):
