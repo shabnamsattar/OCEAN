@@ -22,6 +22,7 @@ class IfCounterfactualMilp(CounterfactualMilp, RandomForestCounterfactualMilp):
                  featuresPossibleValues=False,
                  featuresActionnability=False,
                  oneHotEncoding=False,
+                 boundingBox=None,
                  constraintsType=TreeConstraintsType.LinearCombinationOfPlanes,
                  binaryDecisionVariables=BinaryDecisionVariables.LeftRight_lambda):
         # Base: features, variables, objective holder, model
@@ -41,6 +42,7 @@ class IfCounterfactualMilp(CounterfactualMilp, RandomForestCounterfactualMilp):
         )
 
         self.model.modelName = "IsolationForestCounterfactualMilp"
+        self.boundingBox = boundingBox
         self.isolationForest = isolationForest
         self.completeForest = IsolationOnlyForest(isolationForest)
         
