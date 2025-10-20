@@ -91,8 +91,11 @@ class IfCounterfactualMilp(CounterfactualMilp, RandomForestCounterfactualMilp):
         # feature constraints
         self.addActionnabilityConstraints()
         self.addOneHotEncodingConstraints()
+        # Add bounds constraints of features
+        self.addBoundingBoxConstraints(boundingBox=self.boundingBox)
         # anomaly-→inlier constraint
         self.__addAnomalyScoreConstraint(threshold=decision_threshold)
+        
         # objective (closest x' to x0)
         self.initObjective()  # from CounterfactualMilp
 
