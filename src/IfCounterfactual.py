@@ -64,7 +64,7 @@ class IfCounterfactualMilp(CounterfactualMilp, RandomForestCounterfactualMilp):
 
     # ---------- Key new constraint: log2 anomaly score ----------
     def __addAnomalyScoreConstraint(self, threshold=0.0):
-        print("hi")
+        
         expr = gp.LinExpr(0.0)  # will hold the average depth E[h]
         for t in self.completeForest.isolationForestEstimatorsIndices:
             tm   = self.treeManagers[t]
@@ -82,11 +82,11 @@ class IfCounterfactualMilp(CounterfactualMilp, RandomForestCounterfactualMilp):
         log2_delta = math.log2(-delta)       # log2(−delta) < 0
         constant   = -c_n * log2_delta       # positive
         self.model.addConstr(expr >= constant, name="log2_anomaly_score_constraint")
-        print("Hi")
+        
 
     # ---------- Build & Solve ----------
     def buildModel(self, decision_threshold=0.0):
-        print("build11")
+        
         # variables & per-feature feasible sets
         self.initSolution()
         # build per-tree path variables & inter-tree consistency
@@ -94,17 +94,17 @@ class IfCounterfactualMilp(CounterfactualMilp, RandomForestCounterfactualMilp):
         # feature constraints
         self.addActionnabilityConstraints()
         self.addOneHotEncodingConstraints()
-        # Add bounds constraints of features
-        #self.addBoundingBoxConstraints(boundingBox=self.boundingBox)
+        
+        
         # anomaly-→inlier constraint
         self.__addAnomalyScoreConstraint(threshold=decision_threshold)
         
         # objective (closest x' to x0)
-        #self.initObjective()  # from CounterfactualMilp
-        print("build12")
+        #self.initObjective()  
+        
 
     def solveModel(self, time_limit=600, threads=4):
-        print("startsolve1")
+        
         self.model.setParam(GRB.Param.TimeLimit, time_limit)
         self.model.setParam(GRB.Param.Threads, threads)
         self.model.optimize()
@@ -112,5 +112,5 @@ class IfCounterfactualMilp(CounterfactualMilp, RandomForestCounterfactualMilp):
             self.x_sol = self.x0
             return False
         self.x_sol = [[self.x_var_sol[f].getAttr(GRB.Attr.X) for f in range(self.nFeatures)]]
-        print("startsolve2")
+        
         return True
