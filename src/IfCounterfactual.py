@@ -95,7 +95,7 @@ class IfCounterfactualMilp(CounterfactualMilp, RandomForestCounterfactualMilp):
         self.addActionnabilityConstraints()
         self.addOneHotEncodingConstraints()
         # Add bounds constraints of features
-        self.addBoundingBoxConstraints(boundingBox=self.boundingBox)
+        #self.addBoundingBoxConstraints(boundingBox=self.boundingBox)
         # anomaly-→inlier constraint
         self.__addAnomalyScoreConstraint(threshold=decision_threshold)
         
