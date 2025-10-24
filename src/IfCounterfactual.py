@@ -100,7 +100,7 @@ class IfCounterfactualMilp(CounterfactualMilp, RandomForestCounterfactualMilp):
         self.__addAnomalyScoreConstraint(threshold=decision_threshold)
         
         # objective (closest x' to x0)
-        self.initObjective()  # from CounterfactualMilp
+        #self.initObjective()  # from CounterfactualMilp
         print("build12")
 
     def solveModel(self, time_limit=600, threads=4):
